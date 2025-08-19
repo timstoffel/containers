@@ -1,8 +1,10 @@
-# hadolint ignore=DL3007, DL3018
 # Ignore Version Pinning
+# hadolint ignore=DL3007
 FROM alpine:latest
 
 # Install required tools and create necessary directories
+# Ignore Version Pinning
+# hadolint ignore=DL3018
 RUN apk add --no-cache borgbackup sshfs fuse bash curl tzdata \
  && mkdir -p /root/.ssh /mnt/remote /borg/repo /var/log/borgbackup
 
