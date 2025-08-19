@@ -1,4 +1,4 @@
-name: Build and Push borgbackup Docker Image
+name: Build, Lint and Push borgbackup Docker Image
 
 on:
   push:
@@ -16,7 +16,37 @@ env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/borgbackup
 
 jobs:
+  hadolint:
+    name: Lint Dockerfile with hadolint
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: borgbackup/Dockerfile
+
+  shellcheck:
+    name: Lint shell scripts with ShellCheck
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on scripts
+        run: |
+          shellcheck borgbackup/backup.sh
+          shellcheck borgbackup/entrypoint.sh
+
   build-and-push:
+    needs: [hadolint, shellcheck]
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -6,7 +6,7 @@ A curated collection of my own Docker containers for various infrastructure and 
 
 ## 📦 Available Containers
 
-### `borgbackup_ssh`
+### `borgbackup`
 
 A minimal, production-ready Docker container for automated [BorgBackup](https://www.borgbackup.org/) backups, supporting both local and SSHFS-mounted remote sources.  
 Features include:
@@ -29,7 +29,7 @@ docker run -d \
   -v /your/data:/data/to/backup:ro \
   -v /your/borg/repo:/borg/repo \
   --name borgbackup \
-  yourrepo/borgbackup_ssh:latest
+  ghcr.io/timstoffel/borgbackup:latest
 ```
 For remote SSHFS backups, set the SSHFS environment variable instead of LOCAL_SOURCE and mount your SSH key into /root/.ssh/id_rsa.
 
@@ -38,7 +38,7 @@ For remote SSHFS backups, set the SSHFS environment variable instead of LOCAL_SO
 git clone https://github.com/yourusername/containers.git
 
 * Build a container
-docker build -t yourrepo/borgbackup_ssh borgbackup_ssh/
+docker build -t ghcr.io/timstoffel/borgbackup borgbackup/
 
 * Configure and run
 See usage example above.
