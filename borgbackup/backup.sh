@@ -41,7 +41,11 @@ LOGFILE="/var/log/borgbackup/backup-$(date +'%Y-%m-%d').log"
     OLD_IFS=$IFS
     IFS=','
     for src in $LOCAL_SOURCE; do
-      SOURCES="$SOURCES $src"
+      if [ -z "$SOURCES" ]; then
+        SOURCES="$src"
+      else
+        SOURCES="$SOURCES $src"
+      fi
     done
     IFS=$OLD_IFS
   fi
