@@ -1,20 +1,22 @@
 #!/bin/sh
 
-# Zeitzone setzen, falls über ENV übergeben
-if [ -n "$TZ" ]; then
+set -eu
+
+# Set timezone if provided via ENV
+if [ -n "${TZ:-}" ]; then
   export TZ
   ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
   echo "$TZ" > /etc/timezone
 fi
 
-# Falls das Borg-Repository noch nicht initialisiert ist, initialisiere es (ohne Verschlüsselung)
-if [ ! -f "$BORG_REPO/config" ]; then
-  echo "Initialisiere Borg-Repository im $BORG_REPO ..."
+# Initialize Borg repository if not already initialized (no encryption)
+if [ ! -f "${BORG_REPO}/config" ]; then
+  echo "Initializing Borg repository at $BORG_REPO ..."
   borg init --encryption=none "$BORG_REPO"
 fi
 
-# Schreibe den Cronjob mit Zeitplan aus ENV
-echo "$CRON_SCHEDULE /backup.sh" > /etc/crontabs/root
+# Write cronjob with schedule from ENV
+echo "${CRON_SCHEDULE:-0 3 * * *} /backup.sh" > /etc/crontabs/root
 
-# Starte Cron im Vordergrund
+# Start cron in foreground
 crond -f -d 8
