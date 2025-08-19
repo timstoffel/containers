@@ -1,10 +1,10 @@
+# hadolint ignore=DL3007, DL3018
+# Ignore Version Pinning
 FROM alpine:latest
 
-# Install required tools
-RUN apk add --no-cache borgbackup sshfs fuse bash curl tzdata
-
-# Create necessary directories
-RUN mkdir -p /root/.ssh /mnt/remote /borg/repo /var/log/borgbackup
+# Install required tools and create necessary directories
+RUN apk add --no-cache borgbackup sshfs fuse bash curl tzdata \
+ && mkdir -p /root/.ssh /mnt/remote /borg/repo /var/log/borgbackup
 
 # Copy scripts into the container
 COPY backup.sh /backup.sh
