@@ -17,42 +17,61 @@ health_ping() {
   fi
 }
 
-# SSHFS mounten
-echo "[$(date)] Mount remote via SSHFS..."
-if ! sshfs -o StrictHostKeyChecking=no,allow_other,IdentityFile=/root/.ssh/id_rsa $SSHFS /mnt/remote; then
-  echo "[$(date)] Fehler beim Mounten von SSHFS."
-  health_ping fail
-  exit 1
+SOURCES=""
+
+# SSHFS mounten und zur Quelle hinzufügen
+if [ -n "$SSHFS" ]; then
+  echo "[$(date)] Mount remote via SSHFS..."
+  if ! sshfs -o StrictHostKeyChecking=no,allow_other,IdentityFile=/root/.ssh/id_rsa $SSHFS /mnt/remote; then
+    echo "[$(date)] Fehler beim Mounten von SSHFS."
+    health_ping fail
+    exit 1
+  fi
+  SOURCES="/mnt/remote"
 fi
 
-# Backup mit Borg
-echo "[$(date)] Starte Borg-Backup..."
-if ! borg create --files-cache=mtime,size --stats -v"$BORG_REPO"::"{hostname}-{now:%Y-%m-%d}" /mnt/remote; then
+# Lokale Quellen zur Quelle hinzufügen
+if [ -n "$LOCAL_SOURCE" ]; then
+  IFS=',' read -ra ADDR <<< "$LOCAL_SOURCE"
+  for src in "${ADDR[@]}"; do
+    SOURCES="$SOURCES $src"
+  done
+fi
+
+echo "[$(date)] Starte Borg-Backup für Quellen: $SOURCES"
+
+if ! borg create --files-cache=mtime,size --stats -v "$BORG_REPO::${HOSTNAME}-$(date +'%Y-%m-%d')" $SOURCES; then
   echo "[$(date)] Fehler beim Borg-Backup."
-  fusermount -u /mnt/remote || true
+  if [ -n "$SSHFS" ]; then
+    fusermount -u /mnt/remote || true
+  fi
   health_ping fail
   exit 2
 fi
 
-# Alte Backups aufräumen
 echo "[$(date)] Prune alte Backups..."
+
 if ! borg prune -v --keep-daily=7 --keep-weekly=4 --keep-monthly=12 "$BORG_REPO"; then
   echo "[$(date)] Fehler beim Prune."
-  fusermount -u /mnt/remote || true
+  if [ -n "$SSHFS" ]; then
+    fusermount -u /mnt/remote || true
+  fi
   health_ping fail
   exit 3
 fi
 
-# SSHFS aushängen
-echo "[$(date)] Unmount SSHFS..."
-if ! fusermount -u /mnt/remote; then
-  echo "[$(date)] Fehler beim Unmounten von SSHFS."
-  health_ping fail
-  exit 4
+# SSHFS aushängen, falls benutzt
+if [ -n "$SSHFS" ]; then
+  echo "[$(date)] Unmount SSHFS..."
+  if ! fusermount -u /mnt/remote; then
+    echo "[$(date)] Fehler beim Unmounten von SSHFS."
+    health_ping fail
+    exit 4
+  fi
 fi
 
-# Healthchecks.io Erfolgsping
 health_ping
 
 echo "[$(date)] === Backup erfolgreich abgeschlossen ==="
+
 exit 0
