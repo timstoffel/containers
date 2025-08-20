@@ -88,7 +88,7 @@ LOGFILE="/var/log/borgbackup/backup-$(date +'%Y-%m-%d').log"
   # Print the borg create command with resolved variables for debugging
   echo "[$(date)] borg create --files-cache=mtime,size --stats -v \"$BORG_REPO::${BORG_HOSTNAME}-$(date +'%Y-%m-%d')\" $SOURCES"
 
-  if ! borg create --files-cache=mtime,size --stats -v "$BORG_REPO::${BORG_HOSTNAME}-$(date +'%Y-%m-%d')" $SOURCES; then
+  if ! borg create --files-cache=mtime,size --stats -v "$BORG_REPO::${BORG_HOSTNAME}-$(date +'%Y-%m-%d')" "$SOURCES"; then
     echo "[$(date)] ERROR: Borg backup failed."
     if [ -n "${SSHFS:-}" ]; then
       echo "[$(date)] Attempting to unmount SSHFS after backup failure..."
