@@ -117,7 +117,7 @@ jobs:
         uses: snok/container-retention-policy@v2
         with:
           image-names: borgbackup
-          cut-off: 14 days ago
-          account-type: user
+          cut-off: 14 days ago UTC
+          account-type: personal
           token: ${{ secrets.GITHUB_TOKEN }}
           untagged-only: false
