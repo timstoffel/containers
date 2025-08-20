@@ -70,8 +70,16 @@ jobs:
         id: date
         run: echo "tag=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      - name: Build and push Docker image (PR or scheduled)
-        if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
+      - name: Generate random tag for branch builds
+        id: random
+        run: |
+          if [ "${{ github.ref_type }}" = "branch" ] && [ "${{ github.ref_name }}" != "main" ]; then
+            RAND=$(head /dev/urandom | tr -dc a-z0-9 | head -c6)
+            echo "branch_tag=${{ github.ref_name }}-${RAND}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Docker image (main branch, scheduled, or merged PR)
+        if: github.ref_name == 'main' || github.event_name == 'schedule' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
         uses: docker/build-push-action@v5
         with:
           context: ./borgbackup
@@ -79,6 +87,15 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ steps.date.outputs.tag }}
+
+      - name: Build and push Docker image for branch builds (not main)
+        if: github.ref_type == 'branch' && github.ref_name != 'main'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./borgbackup
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.random.outputs.branch_tag }}
 
       - name: Build Docker image (pull request, no push)
         if: github.event_name == 'pull_request' && github.event.pull_request.merged != true
@@ -100,7 +117,7 @@ jobs:
         uses: snok/container-retention-policy@v2
         with:
           image-names: borgbackup
-          cut-off: 14 days ago
-          account-type: user
+          cut-off: 14 days ago UTC
+          account-type: personal
           token: ${{ secrets.GITHUB_TOKEN }}
           untagged-only: false
